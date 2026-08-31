@@ -58,13 +58,20 @@ struct SectionView: View {
     var body: some View {
         switch section {
         case .conversations:
-            ResourceListView(store: stores.conversations, title: "Conversations") { conversation in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(conversation.title ?? conversation.firstPrompt ?? conversation.id)
-                        .lineLimit(1)
-                    Text("\(conversation.status.rawValue) · \(conversation.runtime.rawValue)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            NavigationStack {
+                ResourceListView(store: stores.conversations, title: "Conversations") { conversation in
+                    NavigationLink(value: conversation.id) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(conversation.title ?? conversation.firstPrompt ?? conversation.id)
+                                .lineLimit(1)
+                            Text("\(conversation.status.rawValue) · \(conversation.runtime.rawValue)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .navigationDestination(for: String.self) { id in
+                    ConversationDetailView(conversationID: id)
                 }
             }
         case .team:

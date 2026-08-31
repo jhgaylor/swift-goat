@@ -51,13 +51,22 @@ below the view layer.
   responses are shaped from the real API (verify with one real call before
   writing the fake — the envelope trap).
 
+- **`TurnFollower` is the fold.** It turns the multi-turn, multi-stream feed
+  into one turn's answer (turn matching, ACP-vs-stdout paragraph joining,
+  which block kinds count as the answer). Its semantics are a deliberate
+  port of the TypeScript SDK's `turn.ts` — change them there first.
+
 ## GoatCore rules
 
 - `Session` owns credentials (Keychain) and hands out a configured
   `FountainClient`. Nothing else touches the key.
-- One store per feature (`AgentsStore`, `ConversationsStore`, …), each
-  `@Observable @MainActor`, owning its loading/error state. Stores call
-  FountainKit; views never do.
+- One store per feature (`ListStore` per sidebar section,
+  `ConversationStore` per open transcript), each `@Observable @MainActor`,
+  owning its loading/error state. Stores call FountainKit; views never do.
+- `ConversationStore` owns the two feed rules: merge history and live
+  events by event id (gaps are normal — the all-events stream only follows
+  unfinished conversations; a stage change triggers a backfill), and
+  `conversation_busy` queues the prompt to flush on turn end.
 - Errors surface as user copy via one `describe(_ error:)` table, same
   pattern as fountain-team's `describeError`.
 
