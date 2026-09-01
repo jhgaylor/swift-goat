@@ -44,6 +44,34 @@ public final class AppStores {
     public let team = ListStore<Teammate> { try await $0.team.list() }
     public let runners = ListStore<Runner> { try await $0.runners.list() }
     public let sandboxes = ListStore<Sandbox> { try await $0.sandboxes.list() }
+    /// Newest first; one page is plenty for a glanceable trail.
+    public let audit = ListStore<AuditEvent> { try await $0.audit.list().items }
+
+    /// The supervised `fountain runner` child process (Runners section).
+    public let localRunner = LocalRunnerController()
+
+    /// Touch ID / password gate for the Admin section and secret edits.
+    public let security = SecurityGate()
+
+    /// Account-wide permission-request watch (notifications, dock badge).
+    public let permissions = PermissionWatcher()
+
+    // Admin section (only refreshed when the gated section is opened, so
+    // non-admin sessions never fire a 403).
+    public let adminUsers = AdminUsersStore()
+    public let adminSandboxes = ListStore<AdminSandbox> { try await $0.admin.sandboxes() }
+    public let adminAudit = ListStore<AuditEvent> { try await $0.admin.audit() }
+    public let adminEvents = ListStore<AdminEvent> { try await $0.admin.events() }
+
+    /// What this deployment offers (runtimes, model suggestions, providers).
+    /// Loaded once per session; pickers fall back to model constants when
+    /// it hasn't arrived.
+    public private(set) var catalog: Catalog?
+
+    public func loadCatalog(_ client: FountainClient) async {
+        guard catalog == nil else { return }
+        catalog = try? await client.catalog()
+    }
 
     public init() {}
 }

@@ -34,11 +34,13 @@ it FountainKit wraps, and what any new wrapper must respect.
 | `environments` / `vaults` | CRUD + write-only secrets (delete path takes the **key**, percent-encoded) |
 | `conversations` | list/get/create (resume detection), prompts, interrupt, terminate, read, turns, tree, permission answers, events page, full history, SSE tail, turn images |
 | `events` | the all-conversations stream |
+| `connections` | list, providers, delete (the MCP chooser's Connections source) |
 | `team` | roster CRUD, messages (202 + busy semantics), threads, fresh conversation, comms status, stream, schedules |
 | `sandboxes` | list/get/reset |
 | `runners` | list/delete |
 | `auth` | me, API keys mint/list/revoke, OAuth token revoke |
 | `audit` / `search` | paged reads |
+| `admin` | users (search/filter + the API's one page-number pagination), role/suspend/comp/credits/sandbox-limit, account deletion, cross-tenant sandboxes + reap, cross-tenant audit, privilege trail — all 403 unless `me.role == admin` |
 | client-level | `catalog()`, `apply()` |
 
 ## Reachable only via `client.request(_:_:)` for now
@@ -47,10 +49,11 @@ Wrap these as features need them, following the shapes above:
 
 - **Account**: billing + credit checkout (404 `billing_disabled` when off),
   exports, deletion, inference credentials, onboarding state
-- **Connections** (Gmail etc.), **secret bindings**, **egress log** — all
-  gated on `me.brokered`
+- **Secret bindings**, **egress log** — gated on `me.brokered`
+  (connections list/providers/delete are wrapped; the OAuth dance itself
+  stays a browser flow via `ConnectionProvider.connectURL`)
 - **Webhooks** (outbound) + deliveries
-- **Support reports**, **buzz agents**, **admin** (`role: admin` only)
+- **Support reports**, **buzz agents**
 - `/v1/*` OpenAI-compat and `/api/agui/:id` — different framing, flag-gated
 
 ## Feature gates a UI must respect
@@ -59,3 +62,4 @@ Wrap these as features need them, following the shapes above:
 - `GET /api/team/comms` `{enabled, configured}` — hides teammate contact
 - `catalog.apps.conversations` / `.team` — deep-link targets, each nullable
 - `comped == nil` on `/api/auth/me` — billing is off on this deployment
+- `me.role == admin` — shows the Admin section (the sidebar filters on it)

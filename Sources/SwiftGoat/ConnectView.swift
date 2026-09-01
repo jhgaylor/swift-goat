@@ -68,14 +68,23 @@ struct ConnectView: View {
 
 struct SettingsView: View {
     @SwiftUI.Environment(Session.self) private var session
+    @SwiftUI.Environment(AppStores.self) private var stores
 
     var body: some View {
+        @Bindable var security = stores.security
         Form {
             LabeledContent("Server", value: session.baseURL.absoluteString)
             if case .signedIn(let email) = session.state {
                 LabeledContent("Signed in as", value: email)
-                Button("Sign out") { session.signOut() }
+                Button("Sign out") {
+                    stores.security.lockAll()
+                    session.signOut()
+                }
             }
+            Toggle(
+                "Require \(SecurityGate.methodLabel) to open the app and for Admin & secret changes",
+                isOn: $security.isEnabled
+            )
         }
         .padding(20)
         .frame(width: 420)

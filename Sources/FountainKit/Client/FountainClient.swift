@@ -23,12 +23,15 @@ public struct FountainClient: Sendable {
     public var vaults: VaultsResource { VaultsResource(client: api) }
     public var conversations: ConversationsResource { ConversationsResource(client: api) }
     public var events: EventsResource { EventsResource(client: api) }
+    public var connections: ConnectionsResource { ConnectionsResource(client: api) }
     public var team: TeamResource { TeamResource(client: api) }
     public var sandboxes: SandboxesResource { SandboxesResource(client: api) }
     public var runners: RunnersResource { RunnersResource(client: api) }
     public var auth: AuthResource { AuthResource(client: api) }
     public var audit: AuditResource { AuditResource(client: api) }
     public var search: SearchResource { SearchResource(client: api) }
+    /// Admin-only; every call 403s unless `auth.me` says `role == admin`.
+    public var admin: AdminResource { AdminResource(client: api) }
 
     /// `GET /api/catalog` — runtimes, model suggestions, sandbox providers,
     /// and where the conversation/team apps live.

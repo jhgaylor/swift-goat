@@ -7,10 +7,17 @@ import GoatCore
 /// markup.
 struct ConversationDetailView: View {
     @SwiftUI.Environment(Session.self) private var session
+    @SwiftUI.Environment(AppStores.self) private var stores
+    @SwiftUI.Environment(\.dismiss) private var dismiss
     let conversationID: String
 
     @State private var store: ConversationStore?
     @State private var draft = ""
+    @State private var attachments: [Attachment] = []
+    @State private var attachmentError: String?
+    @State private var showingFilePicker = false
+    @State private var confirmTerminate = false
+    @State private var confirmDelete = false
 
     var body: some View {
         Group {
@@ -59,8 +66,33 @@ struct ConversationDetailView: View {
                 }
             }
 
+            if !store.pendingPermissions.isEmpty {
+                Divider()
+                VStack(spacing: 8) {
+                    ForEach(store.pendingPermissions, id: \.requestID) { request in
+                        PermissionCard(request: request) { optionID in
+                            Task { await store.answer(request, optionID: optionID) }
+                        }
+                    }
+                }
+                .padding(10)
+            }
+
             Divider()
             composer(store)
+        }
+        // Anywhere on the transcript is a drop target: images attach,
+        // text files inline into the prompt.
+        .dropDestination(for: URL.self) { urls, _ in
+            attach(urls)
+            return true
+        }
+        .fileImporter(
+            isPresented: $showingFilePicker,
+            allowedContentTypes: [.item],
+            allowsMultipleSelection: true
+        ) { result in
+            if case .success(let urls) = result { attach(urls) }
         }
         .navigationTitle(store.conversation?.title ?? "Conversation")
         .navigationSubtitle(store.conversation?.status.rawValue ?? "")
@@ -70,6 +102,41 @@ struct ConversationDetailView: View {
                     Task { await store.interrupt() }
                 }
             }
+            Menu {
+                if store.conversation?.status.isTerminal != true {
+                    Button("Terminate Sandbox…", role: .destructive) { confirmTerminate = true }
+                }
+                Button("Delete Conversation…", role: .destructive) { confirmDelete = true }
+            } label: {
+                Label("More", systemImage: "ellipsis.circle")
+            }
+        }
+        .confirmationDialog(
+            "Terminate this conversation's sandbox?",
+            isPresented: $confirmTerminate
+        ) {
+            Button("Terminate", role: .destructive) {
+                Task { await store.terminate() }
+            }
+        } message: {
+            Text("The agent stops and the sandbox is torn down. The transcript stays.")
+        }
+        .confirmationDialog(
+            "Delete this conversation?",
+            isPresented: $confirmDelete
+        ) {
+            Button("Delete", role: .destructive) {
+                Task {
+                    if await store.delete() {
+                        if let client = session.client {
+                            await stores.conversations.refresh(client)
+                        }
+                        dismiss()
+                    }
+                }
+            }
+        } message: {
+            Text("The transcript is deleted server-side. This can't be undone.")
         }
     }
 
@@ -80,23 +147,86 @@ struct ConversationDetailView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            if let attachmentError {
+                Text(attachmentError)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+            if !attachments.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(attachments) { attachment in
+                            AttachmentChip(attachment: attachment) {
+                                attachments.removeAll { $0.id == attachment.id }
+                            }
+                        }
+                    }
+                }
+            }
             HStack {
+                Button("Attach", systemImage: "paperclip") { showingFilePicker = true }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .help("Attach a file — or drop one anywhere on the transcript")
                 TextField("Message the agent…", text: $draft, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(1...5)
                     .onSubmit { submit(store) }
                 Button("Send", systemImage: "paperplane.fill") { submit(store) }
-                    .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(!canSend)
             }
         }
         .padding(10)
     }
 
+    /// Images need at least a word of text to hang off; a text attachment
+    /// makes a prompt on its own.
+    private var canSend: Bool {
+        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || attachments.contains { !$0.isImage }
+    }
+
+    private func attach(_ urls: [URL]) {
+        attachmentError = nil
+        for url in urls {
+            do {
+                attachments.append(try Attachment.load(from: url))
+            } catch {
+                attachmentError = error.localizedDescription
+            }
+        }
+    }
+
     private func submit(_ store: ConversationStore) {
-        let prompt = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !prompt.isEmpty else { return }
+        guard canSend else { return }
+        let prompt = attachments.assemblePrompt(
+            draft: draft.trimmingCharacters(in: .whitespacesAndNewlines))
+        let images = attachments.images
         draft = ""
-        Task { await store.send(prompt) }
+        attachments = []
+        attachmentError = nil
+        Task { await store.send(prompt, images: images) }
+    }
+}
+
+/// One staged file: name, kind icon, and its remove button.
+struct AttachmentChip: View {
+    let attachment: Attachment
+    let remove: () -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Label(attachment.filename, systemImage: attachment.isImage ? "photo" : "doc.text")
+                .font(.caption)
+                .lineLimit(1)
+            Button("Remove", systemImage: "xmark.circle.fill", action: remove)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .font(.caption)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(.quaternary, in: Capsule())
     }
 }
 
@@ -150,6 +280,8 @@ struct BlockView: View {
                 .foregroundStyle(.red)
                 .textSelection(.enabled)
         case .permissionRequest:
+            // The transcript row is just a marker; the answerable card lives
+            // above the composer while the request is pending.
             Label(block.summary ?? "Permission requested", systemImage: "hand.raised")
                 .font(.callout)
                 .foregroundStyle(.orange)
@@ -161,5 +293,38 @@ struct BlockView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
+    }
+}
+
+/// One pending permission request: what the agent wants, and only the
+/// options it offered (the server rejects invented ones).
+struct PermissionCard: View {
+    let request: PermissionRequest
+    let answer: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(request.summary ?? request.toolName ?? "Permission requested", systemImage: "hand.raised")
+                .font(.callout.weight(.medium))
+            HStack {
+                ForEach(request.options.filter { $0.optionID != nil }, id: \.optionID) { option in
+                    Button(option.name ?? option.kind ?? option.optionID ?? "?") {
+                        if let optionID = option.optionID { answer(optionID) }
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(tint(for: option.kind))
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func tint(for kind: String?) -> Color? {
+        guard let kind else { return nil }
+        if kind.hasPrefix("allow") { return .green }
+        if kind.hasPrefix("reject") { return .red }
+        return nil
     }
 }
