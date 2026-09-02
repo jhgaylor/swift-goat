@@ -8,36 +8,61 @@ a desktop app instead of a browser tab.
 
 ## Status
 
-Usable. On top of the FountainKit foundation the app now covers the core
-loop — spawn a conversation (agent + environment + vault + first prompt),
-watch it stream, answer permission requests inline, queue prompts mid-turn,
-interrupt, terminate, delete — plus create/edit/delete for agents,
-environments and vaults (secrets included), full-text search, and the audit
-trail. The Runners section can also run *this* Mac as a runner: it finds the
-`fountain` CLI, starts/stops the daemon with the app's own session, and tails
-its log.
+Usable. The app covers the core loop end to end, and the pieces below are
+what's built today.
 
-Being native earns its keep: Touch ID (password fallback) gates the Admin
-console and secret changes, a menu bar extra badges working conversations
-and jumps back into live ones while the window is closed, Finder files
-drop straight onto a transcript — images attach to the prompt, text files
-inline into it — and permission requests arrive as actionable
-notifications you can Allow/Deny without focusing the app (run the
-bundled build for those: `Scripts/package-app.sh`, then
-`open dist/SwiftGoat.app`).
+### Conversations
 
-Agents get an MCP chooser: search the official MCP registry and add a
-server with its auth prefilled as `${SECRET}` references, mount one of
-your OAuth connections (Gmail, Microsoft, …), or type a custom remote or
-command. "Discover" scans this Mac — the Claude Code / Codex / Gemini /
-OpenCode / Cursor configs you already have, the projects you work in,
-the apps you've installed and the sites you visit — and turns that into
-ready-to-create agent drafts (your local setups imported with secrets
-redacted, a "TypeScript engineer" for the languages you actually use)
-and integration suggestions you can add to any agent. It runs locally
-and sends nothing until you confirm. Team schedules, webhooks and
-billing are next; see [docs/api-surface.md](docs/api-surface.md) for
-the wrapping backlog.
+Spawn one from the sheet (agent + environment + vault + first prompt),
+watch the turn stream in, answer permission requests on a card above the
+composer, queue prompts mid-turn, interrupt, terminate the sandbox, delete.
+Drop Finder files onto a transcript — images attach to the prompt, text
+files inline into it.
+
+### Agents, environments, vaults
+
+Create, edit and delete all three, secrets included (write-only, deleted by
+key). Agents also get:
+
+- **An MCP chooser** — search the official MCP registry and add a server
+  with its auth prefilled as `${SECRET}` references, mount one of your
+  OAuth connections (Gmail, Microsoft, …), or type a custom remote or
+  command.
+- **Discover** — scans this Mac (the Claude Code / Codex / Gemini /
+  OpenCode / Cursor configs you already have, the projects you work in,
+  the apps you've installed, the sites you visit) and turns it into
+  ready-to-create agent drafts — your local setups imported with secrets
+  redacted, a "TypeScript engineer" for the languages you actually use —
+  plus integration suggestions you can add to any agent. It runs locally
+  and sends nothing until you confirm.
+
+### Runners
+
+The list of your registered runners, and this Mac as one of them: the app
+finds the `fountain` CLI, starts and stops the daemon under its own
+session, and tails the log.
+
+### Everywhere else
+
+Full-text search, the audit trail, read-only Team and Sandboxes lists, and
+an Admin console (users, roles, credits, cross-tenant sandboxes and audit)
+for admin accounts.
+
+### Native touches
+
+- **Touch ID**, password fallback: unlocks the stored key at launch, and
+  gates the Admin console and secret changes after that.
+- **Menu bar extra** that badges working conversations and jumps back into
+  live ones while the window is closed; the Dock icon badges pending
+  permission requests.
+- **Actionable notifications** for permission requests — Allow or Deny
+  without focusing the app. These need a real bundle:
+  `Scripts/package-app.sh`, then `open dist/SwiftGoat.app`.
+- **Browser-style history** — back and forward (⌘[ / ⌘], or mouse buttons
+  4 and 5) walk everywhere you've been, across sections and detail pages.
+
+Team schedules, webhooks and billing are next; see
+[docs/api-surface.md](docs/api-surface.md) for the wrapping backlog.
 
 ## Layout
 
