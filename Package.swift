@@ -14,12 +14,12 @@ let package = Package(
     ],
     dependencies: [
         // FountainKit, the typed Fountain client, lives in the Fountain repo
-        // (sdk/swift) as of BinaryBourbon/fountain#1457. Pinned to that
-        // branch until it merges; then this becomes `branch: "main"`, and a
-        // version once a plain vX.Y.Z tag carries the root manifest.
+        // (sdk/swift, ADR 0041). On `main` until a release tag carries it:
+        // v0.16.0 has the root manifest but predates FountainKit, so
+        // `from: "0.16.0"` would resolve to a package without it.
         .package(
             url: "https://github.com/BinaryBourbon/fountain.git",
-            branch: "sdk/swift-typed-client"
+            branch: "main"
         )
     ],
     targets: [
