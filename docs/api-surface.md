@@ -1,5 +1,9 @@
 # The Fountain API surface, from this client's seat
 
+FountainKit ships from the Fountain repo's `sdk/swift` (Fountain ADR 0041);
+this file is the app's map of what it wraps, kept here because this app is
+what exercises it.
+
 The contract is `GET /api/openapi.json` (vendored snapshot:
 [openapi.json](openapi.json), ~147 operations). This file records which of
 it FountainKit wraps, and what any new wrapper must respect.
@@ -59,18 +63,14 @@ Wrap these as features need them, following the shapes above:
 ## Checked against Fountain's own suite
 
 Shape comes from the OpenAPI document above; behaviour comes from Fountain's
-cross-language SDK conformance scenarios (`sdk/conformance` in the Fountain
-repo), vendored under `Tests/FountainKitTests/Conformance/` and run by
-`swift test`. They pin what no schema can: which error class a 402 becomes,
-that a code outranks its status, that a dropped stream resumes from the last
-id it saw, that a data field split over two writes rejoins.
+cross-language SDK conformance scenarios (`sdk/conformance`), which FountainKit
+runs as the `swift-kit` column. They pin what no schema can: which error class
+a 402 becomes, that a code outranks its status, that a dropped stream resumes
+from the last id it saw, that a data field split over two writes rejoins.
 
-23 of the 24 scenarios run green. The exception is
-`auth-bearer-and-user-agent`, which wants a `fountain-sdk-` User-Agent
-prefix: that is the official SDK family's identity, and FountainKit is a
-third-party client that identifies as `swift-goat/<version>`. The reason
-lives in `verdicts.json`, where every scenario needs a verdict — a synced-in
-scenario nobody has ruled on fails the suite.
+All 24 run green — including the timeout scenario the untyped `swift` client
+skips. Now that FountainKit lives in the Fountain repo, that check runs beside
+the client rather than against a vendored copy of the scenarios.
 
 ## Feature gates a UI must respect
 

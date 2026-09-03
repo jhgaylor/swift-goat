@@ -43,9 +43,14 @@ the wrapping backlog.
 
 | Target | What |
 |---|---|
-| `FountainKit` | Pure Swift client for the Fountain API. No UI, no app state. Usable by any Swift program. |
 | `GoatCore` | App domain: session (Touch ID-gated key store), settings, observable stores. |
 | `SwiftGoat` | The SwiftUI macOS app. |
+
+`FountainKit`, the typed Fountain API client this app is built on, used to
+live here and now ships from the Fountain repo itself
+([`sdk/swift`](https://github.com/BinaryBourbon/fountain/tree/main/sdk/swift),
+Apache-2.0), where it runs Fountain's cross-language conformance suite. This
+app is its first consumer and its worked example.
 
 See [docs/architecture.md](docs/architecture.md) for the design and the rules
 that keep it extensible.

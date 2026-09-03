@@ -12,7 +12,8 @@ SwiftGoat (SwiftUI app)          — views, navigation, commands
 GoatCore (app domain)            — Session, Settings, feature stores (@Observable)
     │
 FountainKit (API client)         — client, resources, models, SSE, errors, transport
-    │
+    │                              ↑ a package dependency: it ships from the
+    │                                Fountain repo's sdk/swift (ADR 0041)
 URLSession                       — behind the HTTPTransport protocol
 ```
 
@@ -22,6 +23,12 @@ the views watch). A future iOS app, CLI, or menu-bar extra reuses everything
 below the view layer.
 
 ## FountainKit rules
+
+FountainKit grew here and now lives upstream in
+[`BinaryBourbon/fountain`](https://github.com/BinaryBourbon/fountain/tree/main/sdk/swift)
+as the typed half of the Swift SDK, beside the untyped `Fountain` client
+(Fountain ADR 0041). These rules are why it is shaped the way it is; change
+them there. What follows still describes the client this app depends on.
 
 - **The OpenAPI document is the contract** (`docs/openapi.json`, generated
   from the server via `mix openapi.spec.json`). Models are hand-written
@@ -68,12 +75,11 @@ below the view layer.
   the whole transcript, the turn is followed once), `value()` for the answer.
   A turn that fails is a `RunResult` with a non-`done` state; only client-side
   failures throw. `timeout` stops the waiting, never the turn.
-- **Conformance is a standing check, not a claim.** Fountain's
-  cross-language SDK conformance scenarios are vendored under
-  `Tests/FountainKitTests/Conformance/` and run on every `swift test`. They
-  are copied verbatim and never edited here; `verdicts.json` says which run
-  and records each deliberate deviation with its reason, and a scenario with
-  no verdict fails the suite. Refresh with `Scripts/sync-conformance.sh`.
+- **Conformance is a standing check, not a claim.** FountainKit runs
+  Fountain's cross-language SDK conformance scenarios as the `swift-kit`
+  column of `sdk/conformance/matrix.json`, green on all 24. That check lives
+  upstream with the client, from the same scenario files the TypeScript,
+  Python and Elixir clients run.
 
 ## GoatCore rules
 

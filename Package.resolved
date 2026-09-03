@@ -1,0 +1,15 @@
+{
+  "originHash" : "4243f9e01d0fce0fda85760e19a6b75a8b7e8dc1cc11e70194a1dcba126f3840",
+  "pins" : [
+    {
+      "identity" : "fountain",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/BinaryBourbon/fountain.git",
+      "state" : {
+        "branch" : "sdk/swift-typed-client",
+        "revision" : "b657c6d4c47c78c7ef041ed304d5f46ffc2bbbab"
+      }
+    }
+  ],
+  "version" : 3
+}
