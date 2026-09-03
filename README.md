@@ -67,4 +67,6 @@ console under API keys, or use an existing `~/.fountain/credentials`.
 
 ## License
 
-MIT
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE) — the project was MIT
+through 2026-09-03 and was relicensed by its sole copyright holder to match
+the license Fountain's clients carry.

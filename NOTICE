@@ -1,0 +1,15 @@
+swift-goat
+Copyright (c) 2026 Jake Gaylor
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+This project was licensed under the MIT License through commit a432432
+(2026-09-03) and relicensed to Apache-2.0 by its sole copyright holder, to
+match the license Fountain's client code carries (Fountain ADR 0027:
+Apache-2.0 for clients). Apache-2.0 is compatible with the MIT terms the
+earlier commits were released under, and those commits remain available
+under MIT to anyone who obtained them that way.
+
+FountainKit, the Fountain API client that lived in Sources/FountainKit, was
+contributed upstream to BinaryBourbon/fountain under Apache-2.0 and is
+consumed from there.
