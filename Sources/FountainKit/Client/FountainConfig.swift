@@ -30,13 +30,37 @@ public struct FountainConfig: Sendable, Equatable {
         self.parentConversationID = parentConversationID
     }
 
+    /// Where a human reads this transcript: the conversations app when the
+    /// deployment names one, else the API itself.
+    public func conversationURL(_ id: String) -> URL {
+        if let appURL, let url = URL(string: "\(appURL.absoluteString.trimmingTrailingSlashes())/#/c/\(id)") {
+            return url
+        }
+        return baseURL.appending(path: "/conversations/\(id)")
+    }
+
+    /// Parse a base URL a human or the environment supplied. Throws rather
+    /// than substituting a different host: `localhost:4000` parses to a URL
+    /// with no host, and quietly falling back to the hosted deployment would
+    /// send a self-hosted key to a server the caller never named.
+    public static func baseURL(from string: String) throws -> URL {
+        let trimmed = string.trimmingCharacters(in: .whitespaces).trimmingTrailingSlashes()
+        guard !trimmed.isEmpty,
+              let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+              let host = url.host, !host.isEmpty
+        else { throw FountainError.invalidBaseURL(string) }
+        return url
+    }
+
     /// Resolve from the same environment the CLI and TS SDK read:
     /// `FOUNTAIN_API_KEY` / `FOUNTAIN_TOKEN`, `FOUNTAIN_BASE_URL`,
     /// `FOUNTAIN_CONVERSATION_ID`, and `~/.fountain/credentials`.
+    /// Throws `invalidBaseURL` when a URL was named but is unusable.
     public static func fromEnvironment(
         profile: String? = nil,
         environment: [String: String] = ProcessInfo.processInfo.environment
-    ) -> FountainConfig {
+    ) throws -> FountainConfig {
         let profileName = firstNonEmpty(profile, environment["FOUNTAIN_PROFILE"]) ?? "default"
         let file = CredentialsFile.read(
             path: environment["FOUNTAIN_CREDENTIALS_FILE"],
@@ -47,10 +71,9 @@ public struct FountainConfig: Sendable, Equatable {
             environment["FOUNTAIN_TOKEN"],
             file["api_key"]
         )
-        let baseURL = firstNonEmpty(environment["FOUNTAIN_BASE_URL"], file["base_url"])
-            .flatMap { URL(string: $0.trimmingTrailingSlashes()) }
+        let named = firstNonEmpty(environment["FOUNTAIN_BASE_URL"], file["base_url"])
         return FountainConfig(
-            baseURL: baseURL ?? defaultBaseURL,
+            baseURL: try named.map(baseURL(from:)) ?? defaultBaseURL,
             apiKey: apiKey,
             parentConversationID: firstNonEmpty(environment["FOUNTAIN_CONVERSATION_ID"])
         )

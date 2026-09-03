@@ -18,7 +18,16 @@ let package = Package(
         .target(name: "FountainKit"),
         .target(name: "GoatCore", dependencies: ["FountainKit"]),
         .executableTarget(name: "SwiftGoat", dependencies: ["GoatCore", "FountainKit"]),
-        .testTarget(name: "FountainKitTests", dependencies: ["FountainKit"]),
+        .testTarget(
+            name: "FountainKitTests",
+            dependencies: ["FountainKit"],
+            // Read from the source tree by the conformance harness, not bundled.
+            exclude: [
+                "Conformance/scenarios",
+                "Conformance/verdicts.json",
+                "Conformance/SUITE.md",
+            ]
+        ),
         .testTarget(name: "GoatCoreTests", dependencies: ["GoatCore"]),
     ]
 )

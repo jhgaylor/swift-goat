@@ -41,7 +41,7 @@ it FountainKit wraps, and what any new wrapper must respect.
 | `auth` | me, API keys mint/list/revoke, OAuth token revoke |
 | `audit` / `search` | paged reads |
 | `admin` | users (search/filter + the API's one page-number pagination), role/suspend/comp/credits/sandbox-limit, account deletion, cross-tenant sandboxes + reap, cross-tenant audit, privilege trail — all 403 unless `me.role == admin` |
-| client-level | `catalog()`, `apply()` |
+| client-level | `catalog()`, `apply()`, `run()` (open a conversation and follow the turn) |
 
 ## Reachable only via `client.request(_:_:)` for now
 
@@ -55,6 +55,22 @@ Wrap these as features need them, following the shapes above:
 - **Webhooks** (outbound) + deliveries
 - **Support reports**, **buzz agents**
 - `/v1/*` OpenAI-compat and `/api/agui/:id` — different framing, flag-gated
+
+## Checked against Fountain's own suite
+
+Shape comes from the OpenAPI document above; behaviour comes from Fountain's
+cross-language SDK conformance scenarios (`sdk/conformance` in the Fountain
+repo), vendored under `Tests/FountainKitTests/Conformance/` and run by
+`swift test`. They pin what no schema can: which error class a 402 becomes,
+that a code outranks its status, that a dropped stream resumes from the last
+id it saw, that a data field split over two writes rejoins.
+
+23 of the 24 scenarios run green. The exception is
+`auth-bearer-and-user-agent`, which wants a `fountain-sdk-` User-Agent
+prefix: that is the official SDK family's identity, and FountainKit is a
+third-party client that identifies as `swift-goat/<version>`. The reason
+lives in `verdicts.json`, where every scenario needs a verdict — a synced-in
+scenario nobody has ruled on fails the suite.
 
 ## Feature gates a UI must respect
 

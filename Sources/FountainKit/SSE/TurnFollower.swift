@@ -2,6 +2,10 @@ import Foundation
 
 /// What a turn produces, distilled: streamable pieces plus the final state.
 public enum TurnEvent: Sendable {
+    /// The conversation the turn belongs to, before it starts — `Run` emits
+    /// this first so a caller can link or title the transcript immediately.
+    /// `TurnFollower` never emits it; it follows a turn, not a conversation.
+    case conversation(Conversation, url: URL)
     case turnStart(turnNumber: Int, turnID: String?)
     /// A chunk of the answer, with paragraph breaks already applied.
     case text(String)

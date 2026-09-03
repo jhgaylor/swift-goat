@@ -12,6 +12,11 @@ public struct APIErrorBody: Sendable, Equatable {
     public var upgradeURL: String?
     public var activeSandboxes: Int?
     public var limit: Int?
+    /// The HTTP status this body arrived with, stamped by the client — the
+    /// wire puts it on the response, not in the body, and a code that
+    /// outranks its status (`conversation_busy` on a 400) would otherwise
+    /// lose it.
+    public var httpStatus: Int?
 
     public init(
         code: String? = nil,
@@ -19,7 +24,8 @@ public struct APIErrorBody: Sendable, Equatable {
         fieldErrors: [String: [String]] = [:],
         upgradeURL: String? = nil,
         activeSandboxes: Int? = nil,
-        limit: Int? = nil
+        limit: Int? = nil,
+        httpStatus: Int? = nil
     ) {
         self.code = code
         self.message = message
@@ -27,6 +33,7 @@ public struct APIErrorBody: Sendable, Equatable {
         self.upgradeURL = upgradeURL
         self.activeSandboxes = activeSandboxes
         self.limit = limit
+        self.httpStatus = httpStatus
     }
 }
 
@@ -54,6 +61,7 @@ extension APIErrorBody: Decodable {
         upgradeURL = try? container.decodeIfPresent(String.self, forKey: .upgradeURL)
         activeSandboxes = try? container.decodeIfPresent(Int.self, forKey: .activeSandboxes)
         limit = try? container.decodeIfPresent(Int.self, forKey: .limit)
+        httpStatus = nil
         // `errors` values may be a string or an array of strings per field.
         if let map = try? container.decodeIfPresent([String: [String]].self, forKey: .errors) {
             fieldErrors = map
@@ -80,6 +88,8 @@ public enum FountainError: Error, Sendable {
     case decoding(any Error, data: Data)
     /// No API key was configured.
     case missingAPIKey
+    /// A base URL was named that is not an absolute http(s) URL.
+    case invalidBaseURL(String)
     /// 401 — the key is missing, expired or revoked.
     case unauthorized(APIErrorBody?)
     /// `conversation_busy` — queue the message locally, flush on turn/done.
@@ -98,21 +108,59 @@ public enum FountainError: Error, Sendable {
     case rateLimited(APIErrorBody?, retryAfter: Double?)
     /// A name-or-id lookup failed (client-side).
     case resolution(String)
+    /// A followed turn outran its client-side deadline. The turn is still
+    /// running in the sandbox; `partialText` is what it had said by then.
+    case timedOut(partialText: String)
     /// Any other API error; `code` and `status` carry the truth.
     case api(APIErrorBody?, status: Int)
 
     /// The server `code`, when one was returned.
-    public var code: String? {
+    public var code: String? { body?.code }
+
+    /// The HTTP status behind this error, when there was a response.
+    public var status: Int? {
         switch self {
-        case .transport, .decoding, .missingAPIKey, .resolution: nil
-        case .unauthorized(let body), .notFound(let body): body?.code
-        case .conversationBusy(let body), .notReady(let body, _),
-             .quotaExceeded(let body), .insufficientCredits(let body, _),
-             .validation(let body): body.code
-        case .rateLimited(let body, _): body?.code
-        case .api(let body, _): body?.code
+        case .transport, .decoding, .missingAPIKey, .invalidBaseURL, .resolution, .timedOut:
+            return nil
+        case .api(let body, let status):
+            return body?.httpStatus ?? status
+        default:
+            break
+        }
+        // A code that outranks its status carries the real one on the body;
+        // the constants are the status each case is defined by.
+        if let stamped = body?.httpStatus { return stamped }
+        switch self {
+        case .unauthorized: return 401
+        case .insufficientCredits: return 402
+        case .notFound: return 404
+        case .validation: return 422
+        case .quotaExceeded, .rateLimited: return 429
+        default: return nil
         }
     }
+
+    /// The error body the server sent, when it sent one.
+    public var body: APIErrorBody? {
+        switch self {
+        case .transport, .decoding, .missingAPIKey, .invalidBaseURL, .resolution, .timedOut: nil
+        case .conversationBusy(let body), .notReady(let body, _), .quotaExceeded(let body),
+             .insufficientCredits(let body, _), .validation(let body): body
+        case .unauthorized(let body), .notFound(let body), .rateLimited(let body, _),
+             .api(let body, _): body
+        }
+    }
+
+    /// Seconds the server asked us to wait, from `Retry-After`.
+    public var retryAfter: Double? {
+        switch self {
+        case .notReady(_, let after), .rateLimited(_, let after): after
+        default: nil
+        }
+    }
+
+    /// Per-field validation messages; empty for everything but a 422.
+    public var fieldErrors: [String: [String]] { body?.fieldErrors ?? [:] }
 
     /// Whether waiting and retrying can help.
     public var isRetryable: Bool {
@@ -128,7 +176,9 @@ public enum FountainError: Error, Sendable {
 
 extension FountainError {
     /// Map a non-2xx response to a typed error. Codes win over status.
-    static func from(status: Int, body: APIErrorBody?, retryAfter: Double? = nil) -> FountainError {
+    static func from(status: Int, body rawBody: APIErrorBody?, retryAfter: Double? = nil) -> FountainError {
+        var body = rawBody
+        body?.httpStatus = status
         if let body {
             switch body.code {
             case "conversation_busy":
@@ -164,6 +214,8 @@ extension FountainError: CustomStringConvertible {
             return "unexpected response shape: \(error)"
         case .missingAPIKey:
             return "No Fountain API key. Add one in Settings."
+        case .invalidBaseURL(let value):
+            return "\(value) is not a server address. Include the scheme, as in https://managoat.com."
         case .unauthorized(let body):
             return body?.message ?? "Unauthorized — check the API key."
         case .conversationBusy(let body):
@@ -187,6 +239,9 @@ extension FountainError: CustomStringConvertible {
             return body?.message ?? "Rate limited."
         case .resolution(let message):
             return message
+        case .timedOut(let partial):
+            let said = partial.isEmpty ? "" : " It had said: \(partial)"
+            return "The turn outran the time allowed; it is still running." + said
         case .api(let body, let status):
             return body?.message ?? body?.code ?? "HTTP \(status)"
         }

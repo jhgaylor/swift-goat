@@ -9,6 +9,7 @@ struct ConnectView: View {
     @SwiftUI.Environment(Session.self) private var session
     @State private var baseURLText = ""
     @State private var apiKey = ""
+    @State private var urlError: String?
 
     var body: some View {
         VStack(spacing: 16) {
@@ -26,7 +27,12 @@ struct ConnectView: View {
             .formStyle(.columns)
             .frame(maxWidth: 380)
 
-            if case .failed(let message) = session.state {
+            if let urlError {
+                Text(urlError)
+                    .font(.callout)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: 380)
+            } else if case .failed(let message) = session.state {
                 Text(message)
                     .font(.callout)
                     .foregroundStyle(.red)
@@ -57,10 +63,16 @@ struct ConnectView: View {
     }
 
     private func connect() async {
-        var trimmed = baseURLText.trimmingCharacters(in: .whitespaces)
-        while trimmed.hasSuffix("/") { trimmed.removeLast() }
-        if !trimmed.isEmpty, let url = URL(string: trimmed) {
-            session.baseURL = url
+        urlError = nil
+        let trimmed = baseURLText.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty {
+            do {
+                try session.setBaseURL(trimmed)
+            } catch {
+                // Never fall through to the previous server with this key.
+                urlError = describe(error)
+                return
+            }
         }
         await session.connect(apiKey: apiKey.trimmingCharacters(in: .whitespaces))
     }

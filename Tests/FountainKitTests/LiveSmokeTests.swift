@@ -10,9 +10,14 @@ import Testing
 ///
 @Suite(.enabled(if: ProcessInfo.processInfo.environment["FOUNTAIN_SMOKE"] != nil))
 struct LiveSmokeTests {
-    let client = FountainClient(config: .fromEnvironment())
+    /// Throwing, because a `FOUNTAIN_BASE_URL` that isn't a real URL is a
+    /// failed smoke run, not a silent redirect to the hosted service.
+    var client: FountainClient {
+        get throws { FountainClient(config: try .fromEnvironment()) }
+    }
 
     @Test func meAgentsAndCatalog() async throws {
+        let client = try client
         let me = try await client.auth.me()
         #expect(!me.email.isEmpty)
 
@@ -24,6 +29,7 @@ struct LiveSmokeTests {
     }
 
     @Test func conversationHistoryAndDrainStream() async throws {
+        let client = try client
         let conversations = try await client.conversations.list()
         guard let conversation = conversations.first else { return }
 
@@ -41,6 +47,7 @@ struct LiveSmokeTests {
     }
 
     @Test func teamRosterAndInfra() async throws {
+        let client = try client
         _ = try await client.team.list()
         _ = try await client.runners.list()
         _ = try await client.sandboxes.list()

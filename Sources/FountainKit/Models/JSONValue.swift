@@ -51,6 +51,27 @@ public enum JSONValue: Sendable, Equatable, Hashable, Codable {
         return nil
     }
 
+    public var arrayValue: [JSONValue]? {
+        if case .array(let value) = self { return value }
+        return nil
+    }
+
+    public var boolValue: Bool? {
+        if case .bool(let value) = self { return value }
+        return nil
+    }
+
+    public var doubleValue: Double? {
+        if case .number(let value) = self { return value }
+        return nil
+    }
+
+    /// A whole number, or nil when the value is fractional or not a number.
+    public var intValue: Int? {
+        guard case .number(let value) = self, value == value.rounded() else { return nil }
+        return Int(value)
+    }
+
     public subscript(key: String) -> JSONValue? {
         objectValue?[key]
     }

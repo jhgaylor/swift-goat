@@ -128,10 +128,3 @@ public enum MCPServers {
         }
     }
 }
-
-extension JSONValue {
-    public var arrayValue: [JSONValue]? {
-        if case .array(let value) = self { return value }
-        return nil
-    }
-}

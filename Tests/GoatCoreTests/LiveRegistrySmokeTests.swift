@@ -28,7 +28,7 @@ struct LiveRegistrySmokeTests {
     }
 
     @Test func connectionsEndpointDecodes() async throws {
-        let client = FountainClient(config: .fromEnvironment())
+        let client = FountainClient(config: try .fromEnvironment())
         let connections = try await client.connections.list()
         for connection in connections {
             #expect(!connection.provider.isEmpty)

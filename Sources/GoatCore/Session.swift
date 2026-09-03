@@ -23,7 +23,9 @@ public final class Session {
     /// process (the local runner daemon) via environment variables.
     public private(set) var apiKey: String?
 
-    public var baseURL: URL {
+    /// Settable only through `setBaseURL`, so an unusable URL can never
+    /// become a different server's.
+    public private(set) var baseURL: URL {
         didSet {
             UserDefaults.standard.set(baseURL.absoluteString, forKey: Self.baseURLKey)
         }
@@ -33,7 +35,15 @@ public final class Session {
 
     public init() {
         let stored = UserDefaults.standard.string(forKey: Self.baseURLKey)
-        baseURL = stored.flatMap(URL.init(string:)) ?? FountainConfig.defaultBaseURL
+        baseURL = stored.flatMap { try? FountainConfig.baseURL(from: $0) } ?? FountainConfig.defaultBaseURL
+    }
+
+    /// Point the session at another deployment. Throws on anything that is
+    /// not an absolute http(s) URL rather than silently retargeting — a
+    /// scheme-less `localhost:4000` must not send the key to the hosted
+    /// service instead.
+    public func setBaseURL(_ text: String) throws {
+        baseURL = try FountainConfig.baseURL(from: text)
     }
 
     /// Whether a key is stored for the current URL — checked without

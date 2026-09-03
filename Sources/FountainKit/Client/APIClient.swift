@@ -69,8 +69,11 @@ public struct APIClient: Sendable {
             throw FountainError.missingAPIKey
         }
         // String concatenation, not appending(path:), so pre-encoded path
-        // components (a secret key with a `/`) aren't double-encoded.
-        guard var components = URLComponents(string: config.baseURL.absoluteString + path) else {
+        // components (a secret key with a `/`) aren't double-encoded. The
+        // base is trimmed first: a configured `https://host/` would otherwise
+        // build `//api/...`, which is a protocol-relative URL, not a path.
+        let base = config.baseURL.absoluteString.trimmingTrailingSlashes()
+        guard var components = URLComponents(string: base + path) else {
             throw FountainError.transport(URLError(.badURL))
         }
         let items = options.query.compactMap { key, value -> URLQueryItem? in

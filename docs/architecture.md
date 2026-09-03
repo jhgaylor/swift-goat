@@ -38,7 +38,9 @@ below the view layer.
   `.validation(fieldErrors:)`, …). Status is a fallback.
 - **The 202 is not the answer.** Sending a prompt queues a turn; the words
   arrive on a stream. FountainKit exposes streams as `AsyncThrowingStream`
-  and handles SSE reconnect (Last-Event-ID, 1s → ×2 → 15s backoff) itself.
+  and handles SSE reconnect itself (`Last-Event-ID`, linear backoff of
+  `retryDelay × attempt`, five attempts; a 4xx is thrown at once because it
+  never self-heals).
 - **Render blocks, never a dialect.** Event feeds always request
   `blocks=true`; the app renders the block union
   (`text | thinking | tool_use | tool_result | init | result | error | raw`)
@@ -51,10 +53,27 @@ below the view layer.
   responses are shaped from the real API (verify with one real call before
   writing the fake — the envelope trap).
 
+- **Never substitute a host.** A base URL that isn't an absolute http(s)
+  URL throws (`FountainConfig.baseURL(from:)`, `.invalidBaseURL`). Falling
+  back to the hosted deployment would post a self-hosted key to a server the
+  caller never named — `localhost:4000` parses to a URL with no host, so this
+  is one typo away, not hypothetical.
 - **`TurnFollower` is the fold.** It turns the multi-turn, multi-stream feed
   into one turn's answer (turn matching, ACP-vs-stdout paragraph joining,
   which block kinds count as the answer). Its semantics are a deliberate
   port of the TypeScript SDK's `turn.ts` — change them there first.
+- **`Run` is the fold with a stream attached.** `client.run(prompt:agent:)`
+  and `conversations.run(id:prompt:)` open or continue a conversation and
+  follow the turn it starts: `events` for the pieces (every subscriber sees
+  the whole transcript, the turn is followed once), `value()` for the answer.
+  A turn that fails is a `RunResult` with a non-`done` state; only client-side
+  failures throw. `timeout` stops the waiting, never the turn.
+- **Conformance is a standing check, not a claim.** Fountain's
+  cross-language SDK conformance scenarios are vendored under
+  `Tests/FountainKitTests/Conformance/` and run on every `swift test`. They
+  are copied verbatim and never edited here; `verdicts.json` says which run
+  and records each deliberate deviation with its reason, and a scenario with
+  no verdict fails the suite. Refresh with `Scripts/sync-conformance.sh`.
 
 ## GoatCore rules
 
