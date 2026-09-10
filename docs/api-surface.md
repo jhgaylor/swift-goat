@@ -5,7 +5,7 @@ this file is the app's map of what it wraps, kept here because this app is
 what exercises it.
 
 The contract is `GET /api/openapi.json` (vendored snapshot:
-[openapi.json](openapi.json), ~147 operations). This file records which of
+[openapi.json](openapi.json), ~163 operations). This file records which of
 it FountainKit wraps, and what any new wrapper must respect.
 
 ## Conventions that hold everywhere
