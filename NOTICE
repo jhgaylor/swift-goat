@@ -11,5 +11,5 @@ earlier commits were released under, and those commits remain available
 under MIT to anyone who obtained them that way.
 
 FountainKit, the Fountain API client that lived in Sources/FountainKit, was
-contributed upstream to BinaryBourbon/fountain under Apache-2.0 and is
+contributed upstream to managoat/fountain under Apache-2.0 and is
 consumed from there.

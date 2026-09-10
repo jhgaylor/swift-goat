@@ -1,6 +1,6 @@
 # swift-goat
 
-A native macOS client for [Fountain](https://github.com/BinaryBourbon/fountain),
+A native macOS client for [Fountain](https://github.com/managoat/fountain),
 the open-source control plane for coding agents.
 
 Manage agents, environments, vaults, runners, conversations and your team from
@@ -48,7 +48,7 @@ the wrapping backlog.
 
 `FountainKit`, the typed Fountain API client this app is built on, used to
 live here and now ships from the Fountain repo itself
-([`sdk/swift`](https://github.com/BinaryBourbon/fountain/tree/main/sdk/swift),
+([`sdk/swift`](https://github.com/managoat/fountain/tree/main/sdk/swift),
 Apache-2.0), where it runs Fountain's cross-language conformance suite. This
 app is its first consumer and its worked example.
 
