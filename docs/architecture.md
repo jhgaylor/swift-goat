@@ -25,7 +25,7 @@ below the view layer.
 ## FountainKit rules
 
 FountainKit grew here and now lives upstream in
-[`BinaryBourbon/fountain`](https://github.com/BinaryBourbon/fountain/tree/main/sdk/swift)
+[`managoat/fountain`](https://github.com/managoat/fountain/tree/main/sdk/swift)
 as the typed half of the Swift SDK, beside the untyped `Fountain` client
 (Fountain ADR 0041). These rules are why it is shaped the way it is; change
 them there. What follows still describes the client this app depends on.

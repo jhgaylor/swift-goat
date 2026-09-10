@@ -18,7 +18,7 @@ let package = Package(
         // v0.16.0 has the root manifest but predates FountainKit, so
         // `from: "0.16.0"` would resolve to a package without it.
         .package(
-            url: "https://github.com/BinaryBourbon/fountain.git",
+            url: "https://github.com/managoat/fountain.git",
             branch: "main"
         )
     ],

@@ -1,10 +1,10 @@
 {
-  "originHash" : "1b61175ba1a60f0081607dd0163d82c521b5c2788dac6d0d0d77994b3a4ed843",
+  "originHash" : "f3b1f5913f6d994e120db0f9f640b2ba640a5171bdd35bde165f93a12f4814b1",
   "pins" : [
     {
       "identity" : "fountain",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/BinaryBourbon/fountain.git",
+      "location" : "https://github.com/managoat/fountain.git",
       "state" : {
         "branch" : "main",
         "revision" : "58e3d4d312a6b049a24153090d95b1b8d5e00118"
